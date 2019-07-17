@@ -2,9 +2,11 @@ package main
 
 import (
 	"log"
+	"strings"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
+	"github.com/mattn/go-runewidth"
 )
 
 type Email struct {
@@ -40,13 +42,21 @@ func (self *Email) Update(q chan Event) {
 	go func() {
 		done <- c.Fetch(
 			seqset,
-			[]imap.FetchItem{imap.FetchEnvelope},
+			[]imap.FetchItem{imap.FetchEnvelope, imap.FetchFlags},
 			messages)
 	}()
 
 	for msg := range messages {
-		q <- &MEvent{"* " + msg.Envelope.Subject}
+		sender := msg.Envelope.Sender
+		sender_str := sender[0].PersonalName
+		if len(sender_str) == 0 {
+			sender_str = sender[0].MailboxName + "@" + sender[0].HostName
+		}
+		sender_str = runewidth.Truncate(sender_str, 20, "\u2026")
+		sender_str = runewidth.FillRight(sender_str, 20)
+		q <- &MEvent{"* " + sender_str + " " + msg.Envelope.Subject + " " + strings.Join(msg.Flags, " ")}
 	}
+	q <- &MEvent{"Done"}
 
 	if err := <-done; err != nil {
 		log.Fatal(err)

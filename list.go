@@ -18,7 +18,7 @@ func (self *List) Draw(s tcell.Screen, active bool) {
 
 	list := []string{}
 	if len(self.list) == 0 {
-		list = append(list, "Updating...")
+		list = append(list, "Updating\u2026")
 	} else {
 		for i := range self.list {
 			list = append(list, self.list[len(self.list)-1-i])
@@ -62,6 +62,10 @@ func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 		self.chord = self.chord + string(ev.Rune())
 		newChord = true
+	case '}':
+		self.activeIdx += inc * h / 2
+	case '{':
+		self.activeIdx -= inc * h / 2
 	}
 	switch ev.Key() {
 	case tcell.KeyPgDn, tcell.KeyCtrlD:
