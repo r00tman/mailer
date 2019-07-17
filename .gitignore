@@ -1,2 +1,3 @@
 *.swp
 mailer
+config.go

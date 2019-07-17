@@ -2,22 +2,10 @@ package main
 
 import (
 	"log"
-	"time"
 
 	"github.com/gdamore/tcell"
 	"github.com/gdamore/tcell/encoding"
 )
-
-type Event interface {
-}
-
-type TEvent struct {
-	t tcell.Event
-}
-
-type MEvent struct {
-	m string
-}
 
 func main() {
 	encoding.Register()
@@ -33,7 +21,7 @@ func main() {
 	defer s.Fini()
 	s.EnableMouse()
 
-	list := List{[]string{"1", "2", "3", "4"}, 0}
+	list := List{[]string{}, 0, 0}
 	prompt := CmdPrompt{}
 	isPromptActive := false
 	q := make(chan Event, 0)
@@ -44,10 +32,8 @@ func main() {
 		}
 	}()
 	go func() {
-		for {
-			q <- &MEvent{m: "hi"}
-			time.Sleep(1 * time.Second)
-		}
+		c := Email{}
+		c.Update(q)
 	}()
 	for {
 		rev := <-q
@@ -57,8 +43,13 @@ func main() {
 			case *tcell.EventResize:
 				s.Sync()
 			case *tcell.EventKey:
-				if ev.Rune() == ':' && !isPromptActive {
-					isPromptActive = true
+				if !isPromptActive {
+					if ev.Rune() == ':' {
+						isPromptActive = true
+					}
+					if ev.Rune() == 'q' {
+						return
+					}
 				}
 				if isPromptActive {
 					ipa, quit := prompt.Update(ev)
@@ -67,7 +58,7 @@ func main() {
 						return
 					}
 				} else {
-					list.Update(ev)
+					list.Update(s, ev)
 				}
 			}
 		case *MEvent:
