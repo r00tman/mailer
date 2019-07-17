@@ -24,33 +24,30 @@ func emitStr(s tcell.Screen, x, y int, style tcell.Style, str string) int {
 type CmdPrompt struct {
 	cursor uint
 	str    string
-	active bool
 }
 
-func (c *CmdPrompt) Draw(s tcell.Screen) {
+func (self *CmdPrompt) Draw(s tcell.Screen, active bool) {
 	_, h := s.Size()
-	l := emitStr(s, 0, h-1, tcell.StyleDefault, c.str)
-	s.ShowCursor(l, h-1)
+	l := emitStr(s, 0, h-1, tcell.StyleDefault, self.str)
+	if active {
+		s.ShowCursor(l, h-1)
+	}
 }
 
-func (c *CmdPrompt) Update(ev *tcell.EventKey) bool {
+func (self *CmdPrompt) Update(ev *tcell.EventKey) (bool, bool) {
 	switch ev.Key() {
 	case tcell.KeyBackspace, tcell.KeyBackspace2:
-		if !c.active {
-		} else if sz := len(c.str); sz > 0 {
-			c.str = c.str[:sz-1]
+		if sz := len(self.str); sz > 0 {
+			self.str = self.str[:sz-1]
 		}
 	case tcell.KeyEnter:
-		if c.str == ":q" {
-			return false
+		if self.str == ":q" {
+			return false, true
 		}
-		c.str = ""
-		c.active = false
+		self.str = ""
+		return false, false
 	default:
-		if c.active || ev.Rune() == ':' {
-			c.str += string(ev.Rune())
-			c.active = true
-		}
+		self.str += string(ev.Rune())
 	}
-	return true
+	return true, false
 }

@@ -21,21 +21,31 @@ func main() {
 	defer s.Fini()
 	s.EnableMouse()
 
+	list := List{[]string{"1", "2", "3", "4"}, 0}
 	prompt := CmdPrompt{}
+	isPromptActive := false
 	for {
-		s.Clear()
-		emitStr(s, 0, 0, tcell.StyleDefault, "hello world")
-
 		ev := s.PollEvent()
 		switch ev := ev.(type) {
 		case *tcell.EventResize:
 			s.Sync()
 		case *tcell.EventKey:
-			if !prompt.Update(ev) {
-				return
+			if ev.Rune() == ':' && !isPromptActive {
+				isPromptActive = true
+			}
+			if isPromptActive {
+				ipa, quit := prompt.Update(ev)
+				isPromptActive = ipa
+				if quit {
+					return
+				}
+			} else {
+				list.Update(ev)
 			}
 		}
-		prompt.Draw(s)
+		s.Clear()
+		list.Draw(s, !isPromptActive)
+		prompt.Draw(s, isPromptActive)
 		s.Show()
 	}
 }
