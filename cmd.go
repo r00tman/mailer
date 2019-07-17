@@ -23,6 +23,9 @@ func (self *CmdPrompt) Update(ev *tcell.EventKey) (bool, bool) {
 		if sz := len(self.str); sz > 0 {
 			self.str = self.str[:sz-1]
 		}
+		if len(self.str) == 0 {
+			return false, false
+		}
 	case tcell.KeyEnter:
 		if self.str == ":q" {
 			return false, true
