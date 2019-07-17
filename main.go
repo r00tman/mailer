@@ -21,7 +21,7 @@ func main() {
 	defer s.Fini()
 	s.EnableMouse()
 
-	list := List{[]string{}, 0, 0}
+	list := List{[]string{}, 0, 0, ""}
 	prompt := CmdPrompt{}
 	isPromptActive := false
 	q := make(chan Event, 0)

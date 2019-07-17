@@ -1,11 +1,16 @@
 package main
 
-import "github.com/gdamore/tcell"
+import (
+	"strconv"
+
+	"github.com/gdamore/tcell"
+)
 
 type List struct {
 	list      []string
 	activeIdx int
 	offset    int
+	chord     string
 }
 
 func (self *List) Draw(s tcell.Screen, active bool) {
@@ -32,23 +37,44 @@ func (self *List) Draw(s tcell.Screen, active bool) {
 
 func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
 	_, h := s.Size()
+	newChord := false
+	inc := 1
+	if len(self.chord) > 0 {
+		ninc, err := strconv.Atoi(self.chord)
+		if err == nil {
+			inc = ninc
+		}
+	}
 	switch ev.Rune() {
 	case 'j':
-		self.activeIdx += 1
+		self.activeIdx += inc
 	case 'k':
-		self.activeIdx -= 1
+		self.activeIdx -= inc
+	case 'g':
+		if self.chord == "g" {
+			self.activeIdx = 0
+		} else {
+			self.chord = "g"
+			newChord = true
+		}
 	case 'G':
 		self.activeIdx = len(self.list) - 1
+	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+		self.chord = self.chord + string(ev.Rune())
+		newChord = true
 	}
 	switch ev.Key() {
 	case tcell.KeyPgDn, tcell.KeyCtrlD:
-		self.activeIdx += h / 2
+		self.activeIdx += inc * h / 2
 	case tcell.KeyPgUp, tcell.KeyCtrlU:
-		self.activeIdx -= h / 2
+		self.activeIdx -= inc * h / 2
 	case tcell.KeyUp:
-		self.activeIdx -= 1
+		self.activeIdx -= inc
 	case tcell.KeyDown:
-		self.activeIdx += 1
+		self.activeIdx += inc
+	}
+	if !newChord {
+		self.chord = ""
 	}
 
 	if self.activeIdx >= len(self.list) {
