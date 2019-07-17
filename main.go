@@ -27,6 +27,7 @@ func emitStr(s tcell.Screen, x, y int, style tcell.Style, str string) int {
 type CmdPrompt struct {
 	cursor uint
 	str    string
+	active bool
 }
 
 func (c *CmdPrompt) Draw(s tcell.Screen) {
@@ -38,7 +39,8 @@ func (c *CmdPrompt) Draw(s tcell.Screen) {
 func (c *CmdPrompt) Update(ev *tcell.EventKey) bool {
 	switch ev.Key() {
 	case tcell.KeyBackspace, tcell.KeyBackspace2:
-		if sz := len(c.str); sz > 0 {
+		if !c.active {
+		} else if sz := len(c.str); sz > 0 {
 			c.str = c.str[:sz-1]
 		}
 	case tcell.KeyEnter:
@@ -46,8 +48,12 @@ func (c *CmdPrompt) Update(ev *tcell.EventKey) bool {
 			return false
 		}
 		c.str = ""
+		c.active = false
 	default:
-		c.str += string(ev.Rune())
+		if c.active || ev.Rune() == ':' {
+			c.str += string(ev.Rune())
+			c.active = true
+		}
 	}
 	return true
 }
@@ -56,7 +62,7 @@ func main() {
 	encoding.Register()
 
 	s, e := tcell.NewScreen()
-	prompt := CmdPrompt{str: ""}
+	prompt := CmdPrompt{}
 
 	if e != nil {
 		log.Fatal(e)
