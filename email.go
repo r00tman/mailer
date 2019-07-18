@@ -13,6 +13,7 @@ import (
 	"github.com/emersion/go-imap/client"
 	"github.com/emersion/go-message"
 	_ "github.com/emersion/go-message/charset"
+	"github.com/mattn/go-runewidth"
 )
 
 type Email struct {
@@ -58,7 +59,7 @@ func dfs(m *message.Entity, out chan string) {
 		}
 	} else {
 		t, _, _ := m.Header.ContentType()
-		b := []byte{}
+		b := ""
 		out <- fmt.Sprintln("This is a non-multipart message with type", t)
 		out <- fmt.Sprintln("------------------------------------------" + strings.Repeat("-", len(t)))
 		if t == "text/html" {
@@ -66,16 +67,16 @@ func dfs(m *message.Entity, out chan string) {
 			c.Stdin = m.Body
 			newb, err := c.Output()
 			if err == nil {
-				b = newb
+				b = string(newb)
 			}
 
 		} else if t == "text/plain" {
 			newb, err := ioutil.ReadAll(m.Body)
 			if err == nil {
-				b = newb
+				b = runewidth.Wrap(string(newb), 179)
 			}
 		}
-		for _, x := range strings.Split(string(b), "\n") {
+		for _, x := range strings.Split(b, "\n") {
 			out <- x
 		}
 	}
