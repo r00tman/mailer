@@ -11,7 +11,7 @@ type CmdPrompt struct {
 
 func (self *CmdPrompt) Draw(s tcell.Screen, active bool) {
 	_, h := s.Size()
-	l := emitStr(s, 0, h-1, tcell.StyleDefault, self.str)
+	l := emitStrDef(s, 0, h-1, self.str)
 	if active {
 		s.ShowCursor(l, h-1)
 	}

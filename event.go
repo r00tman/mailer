@@ -1,6 +1,9 @@
 package main
 
-import "github.com/gdamore/tcell"
+import (
+	"github.com/emersion/go-imap"
+	"github.com/gdamore/tcell"
+)
 
 type Event interface {
 }
@@ -10,5 +13,5 @@ type TEvent struct {
 }
 
 type MEvent struct {
-	m string
+	m *imap.Message
 }

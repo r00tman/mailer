@@ -20,3 +20,13 @@ func emitStr(s tcell.Screen, x, y int, style tcell.Style, str string) int {
 	}
 	return x - x_or
 }
+
+func emitStrDef(s tcell.Screen, x, y int, str string) int {
+	return emitStr(s, x, y, tcell.StyleDefault, str)
+}
+
+func truncateFillRight(x string, w int) string {
+	x = runewidth.Truncate(x, w, "\u2026")
+	x = runewidth.FillRight(x, w)
+	return x
+}
