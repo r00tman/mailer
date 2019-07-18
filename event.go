@@ -8,10 +8,14 @@ import (
 type Event interface {
 }
 
-type TEvent struct {
+type TermEvent struct {
 	t tcell.Event
 }
 
-type MEvent struct {
+type NewMessageEvent struct {
+	m *imap.Message
+}
+
+type ViewMessageEvent struct {
 	m *imap.Message
 }

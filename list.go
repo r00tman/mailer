@@ -32,7 +32,7 @@ func (self *List) Draw(s tcell.Screen, active bool) {
 	}
 }
 
-func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
+func (self *List) Update(s tcell.Screen, ev *tcell.EventKey, q chan Event) {
 	_, h := s.Size()
 	newChord := false
 	inc := 1
@@ -44,18 +44,9 @@ func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
 	}
 	switch ev.Rune() {
 	case 'l':
-		out := make(chan string, 0)
-		go func(msg *Message) {
-			c := Email{}
-			c.Connect()
-			c.ReadMail((*imap.Message)(msg), out)
-			c.Logout()
-			close(out)
-		}(self.list[self.activeIdx].(*Message))
-		self.list = []ListItem{}
-		for m := range out {
-			self.list = append(self.list, (Line)(m))
-		}
+		go func() {
+			q <- &ViewMessageEvent{(*imap.Message)(self.list[self.activeIdx].(*Message))}
+		}()
 	case 'j':
 		self.activeIdx += inc
 	case 'k':

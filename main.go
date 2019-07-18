@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/emersion/go-imap"
 	"github.com/gdamore/tcell"
 	"github.com/gdamore/tcell/encoding"
 )
@@ -28,19 +29,20 @@ func main() {
 	go func() {
 		for {
 			ev := s.PollEvent()
-			q <- &TEvent{t: ev}
+			q <- &TermEvent{t: ev}
 		}
 	}()
+	c := Email{}
+	c.Connect()
+	defer c.Logout()
+
 	go func() {
-		c := Email{}
-		c.Connect()
-		defer c.Logout()
 		c.Update(q)
 	}()
 	for {
 		rev := <-q
 		switch rev := rev.(type) {
-		case *TEvent:
+		case *TermEvent:
 			switch ev := rev.t.(type) {
 			case *tcell.EventResize:
 				s.Sync()
@@ -60,11 +62,23 @@ func main() {
 						return
 					}
 				} else {
-					list.Update(s, ev)
+					list.Update(s, ev, q)
 				}
 			}
-		case *MEvent:
+		case *NewMessageEvent:
 			list.list = append([]ListItem{(*Message)(rev.m)}, list.list...)
+		case *ViewMessageEvent:
+			out := make(chan string, 0)
+			go func(msg *imap.Message) {
+				c.ReadMail(msg, out)
+				close(out)
+			}(rev.m)
+			go func() {
+				list.list = []ListItem{}
+				for m := range out {
+					list.list = append(list.list, (Line)(m))
+				}
+			}()
 		default:
 			return
 		}
