@@ -34,6 +34,8 @@ func main() {
 	}()
 	go func() {
 		c := Email{}
+		c.Connect()
+		defer c.Logout()
 		c.Update(q)
 	}()
 	for {

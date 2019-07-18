@@ -18,7 +18,7 @@ type List struct {
 
 func isUnseen(flags []string) bool {
 	for _, x := range flags {
-		if x == "\\Seen" {
+		if x == imap.SeenFlag {
 			return false
 		}
 	}
@@ -98,6 +98,13 @@ func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
 		}
 	}
 	switch ev.Rune() {
+	case 'l':
+		go func(msg *imap.Message) {
+			c := Email{}
+			c.Connect()
+			c.ReadMail(msg)
+			c.Logout()
+		}(self.list[len(self.list)-1-self.activeIdx])
 	case 'j':
 		self.activeIdx += inc
 	case 'k':
