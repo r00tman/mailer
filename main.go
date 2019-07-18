@@ -9,6 +9,10 @@ import (
 )
 
 func main() {
+	c := Email{}
+	c.Connect()
+	defer c.Logout()
+
 	encoding.Register()
 
 	s, e := tcell.NewScreen()
@@ -22,9 +26,12 @@ func main() {
 	defer s.Fini()
 	s.EnableMouse()
 
-	list := List{[]ListItem{}, 0, 0, ""}
+	list := List{[]ListItem{}, 0, 0, "", func() {}, func() {}}
+	viewer := List{[]ListItem{}, 0, 0, "", func() {}, func() {}}
+
 	prompt := CmdPrompt{}
 	isPromptActive := false
+	isMailbox := true
 	q := make(chan Event, 0)
 	go func() {
 		for {
@@ -32,13 +39,21 @@ func main() {
 			q <- &TermEvent{t: ev}
 		}
 	}()
-	c := Email{}
-	c.Connect()
-	defer c.Logout()
 
 	go func() {
 		c.Update(q)
 	}()
+
+	viewer.backCallback = func() {
+		go func() {
+			q <- &ViewMailboxEvent{}
+		}()
+	}
+	list.forwardCallback = func() {
+		go func() {
+			q <- &ViewMessageEvent{(*imap.Message)(list.list[list.activeIdx].(*Message))}
+		}()
+	}
 	for {
 		rev := <-q
 		switch rev := rev.(type) {
@@ -61,29 +76,44 @@ func main() {
 					if quit {
 						return
 					}
+				} else if isMailbox {
+					list.Update(s, ev)
 				} else {
-					list.Update(s, ev, q)
+					viewer.Update(s, ev)
 				}
 			}
 		case *NewMessageEvent:
 			list.list = append([]ListItem{(*Message)(rev.m)}, list.list...)
+		case *RefreshEvent:
 		case *ViewMessageEvent:
+			isMailbox = false
+			viewer.list = []ListItem{}
+			viewer.activeIdx = 0
+			viewer.offset = 0
 			out := make(chan string, 0)
 			go func(msg *imap.Message) {
 				c.ReadMail(msg, out)
 				close(out)
 			}(rev.m)
 			go func() {
-				list.list = []ListItem{}
+				l := []ListItem{}
 				for m := range out {
-					list.list = append(list.list, (Line)(m))
+					l = append(l, (Line)(m))
 				}
+				viewer.list = l
+				q <- &RefreshEvent{}
 			}()
+		case *ViewMailboxEvent:
+			isMailbox = true
 		default:
 			return
 		}
 		s.Clear()
-		list.Draw(s, !isPromptActive)
+		if isMailbox {
+			list.Draw(s, !isPromptActive)
+		} else {
+			viewer.Draw(s, !isPromptActive)
+		}
 		prompt.Draw(s, isPromptActive)
 		s.Show()
 	}

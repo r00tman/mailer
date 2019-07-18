@@ -3,7 +3,6 @@ package main
 import (
 	"strconv"
 
-	"github.com/emersion/go-imap"
 	"github.com/gdamore/tcell"
 )
 
@@ -12,6 +11,9 @@ type List struct {
 	activeIdx int
 	offset    int
 	chord     string
+
+	backCallback    func()
+	forwardCallback func()
 }
 
 func (self *List) Draw(s tcell.Screen, active bool) {
@@ -19,6 +21,7 @@ func (self *List) Draw(s tcell.Screen, active bool) {
 
 	if len(self.list) == 0 {
 		emitStrDef(s, 0, 0, "Updating\u2026")
+		s.ShowCursor(0, 0)
 	} else {
 		for i, msg := range self.list[self.offset:] {
 			if i >= h-1 {
@@ -32,7 +35,7 @@ func (self *List) Draw(s tcell.Screen, active bool) {
 	}
 }
 
-func (self *List) Update(s tcell.Screen, ev *tcell.EventKey, q chan Event) {
+func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
 	_, h := s.Size()
 	newChord := false
 	inc := 1
@@ -43,10 +46,10 @@ func (self *List) Update(s tcell.Screen, ev *tcell.EventKey, q chan Event) {
 		}
 	}
 	switch ev.Rune() {
+	case 'h':
+		self.backCallback()
 	case 'l':
-		go func() {
-			q <- &ViewMessageEvent{(*imap.Message)(self.list[self.activeIdx].(*Message))}
-		}()
+		self.forwardCallback()
 	case 'j':
 		self.activeIdx += inc
 	case 'k':

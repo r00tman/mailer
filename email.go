@@ -148,7 +148,7 @@ func (self *Email) Update(q chan Event) {
 	go func() {
 		done <- c.Fetch(
 			seqset,
-			[]imap.FetchItem{imap.FetchEnvelope, imap.FetchFlags, imap.FetchBody, imap.FetchBodyStructure},
+			[]imap.FetchItem{imap.FetchEnvelope, imap.FetchFlags},
 			messages)
 	}()
 
