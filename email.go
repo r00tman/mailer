@@ -60,6 +60,7 @@ func dfs(m *message.Entity, out chan string) {
 		t, _, _ := m.Header.ContentType()
 		b := []byte{}
 		out <- fmt.Sprintln("This is a non-multipart message with type", t)
+		out <- fmt.Sprintln("------------------------------------------" + strings.Repeat("-", len(t)))
 		if t == "text/html" {
 			c := exec.Command("w3m", "-dump", "-T", "text/html")
 			c.Stdin = m.Body
