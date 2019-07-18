@@ -13,7 +13,7 @@ import (
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
 	"github.com/emersion/go-message"
-	_ "github.com/emersion/go-message/charset"
+	"github.com/emersion/go-message/charset"
 	"github.com/mattn/go-runewidth"
 )
 
@@ -127,14 +127,20 @@ func (self *Email) ReadMail(msg imap.Message, out chan string) {
 		log.Fatal(err)
 	}
 
-	dec := new(mime.WordDecoder)
+	dec := mime.WordDecoder{charset.Reader}
 	header := m.Header
-	out <- fmt.Sprintln("Date:", header.Get("Date"))
-	out <- fmt.Sprintln("From:", header.Get("From"))
-	out <- fmt.Sprintln("To:", header.Get("To"))
-	val, err := dec.DecodeHeader(header.Get("Subject"))
-	out <- fmt.Sprintln("Subject:", val, err)
-	// out <- fmt.Sprintln("Subject:", header.Get("Subject"))
+	getDecoded := func(h string) string {
+		raw := header.Get(h)
+		val, err := dec.DecodeHeader(raw)
+		if err != nil {
+			val = fmt.Sprint(err)
+		}
+		return val
+	}
+	out <- fmt.Sprintln("Date:", getDecoded("Date"))
+	out <- fmt.Sprintln("From:", getDecoded("From"))
+	out <- fmt.Sprintln("To:", getDecoded("To"))
+	out <- fmt.Sprintln("Subject:", getDecoded("Subject"))
 
 	dfs(m, out)
 }
