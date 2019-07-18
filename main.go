@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 
-	"github.com/emersion/go-imap"
 	"github.com/gdamore/tcell"
 	"github.com/gdamore/tcell/encoding"
 )
@@ -22,7 +21,7 @@ func main() {
 	defer s.Fini()
 	s.EnableMouse()
 
-	list := List{[]*imap.Message{}, 0, 0, ""}
+	list := List{[]ListItem{}, 0, 0, ""}
 	prompt := CmdPrompt{}
 	isPromptActive := false
 	q := make(chan Event, 0)
@@ -65,7 +64,7 @@ func main() {
 				}
 			}
 		case *MEvent:
-			list.list = append(list.list, rev.m)
+			list.list = append([]ListItem{(*Message)(rev.m)}, list.list...)
 		default:
 			return
 		}

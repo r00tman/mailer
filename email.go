@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"mime"
 	"os/exec"
+	"strings"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -33,46 +35,52 @@ func (self *Email) Logout() {
 	self.c.Logout()
 }
 
-func dfs(m *message.Entity) {
+func dfs(m *message.Entity, out chan string) {
 	if mr := m.MultipartReader(); mr != nil {
 		// This is a multipart message
-		log.Println("This is a multipart message containing:")
+		out <- fmt.Sprintln("This is a multipart message containing:")
 		for {
 			p, err := mr.NextPart()
 
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				log.Println(err)
+				out <- fmt.Sprintln(err)
 				continue
 			}
 
 			t, _, _ := p.Header.ContentType()
-			log.Println("A part with type", t)
+			out <- fmt.Sprintln("A part with type", t)
 
-			dfs(p)
+			dfs(p, out)
 			// b, _ := ioutil.ReadAll(p.Body)
 			// log.Println("A part with type", string(b))
 		}
 	} else {
 		t, _, _ := m.Header.ContentType()
-		log.Println("This is a non-multipart message with type", t)
+		b := []byte{}
+		out <- fmt.Sprintln("This is a non-multipart message with type", t)
 		if t == "text/html" {
 			c := exec.Command("w3m", "-dump", "-T", "text/html")
 			c.Stdin = m.Body
-			b, err := c.Output()
+			newb, err := c.Output()
 			if err == nil {
-				log.Println(string(b))
+				b = newb
 			}
 
 		} else if t == "text/plain" {
-			b, _ := ioutil.ReadAll(m.Body)
-			log.Println(string(b))
+			newb, err := ioutil.ReadAll(m.Body)
+			if err == nil {
+				b = newb
+			}
+		}
+		for _, x := range strings.Split(string(b), "\n") {
+			out <- x
 		}
 	}
 }
 
-func (self *Email) ReadMail(msg *imap.Message) {
+func (self *Email) ReadMail(msg *imap.Message, out chan string) {
 	c := self.c
 	_, err := c.Select("INBOX", false)
 	if err != nil {
@@ -92,7 +100,7 @@ func (self *Email) ReadMail(msg *imap.Message) {
 		done <- c.Fetch(seqset, items, messages)
 	}()
 
-	log.Println("Last message:")
+	out <- fmt.Sprintln("Last message:")
 	amsg := <-messages
 
 	// log.Print(msg.SeqNum, msg.Uid, amsg.SeqNum, amsg.Uid, mbox.Messages)
@@ -104,21 +112,21 @@ func (self *Email) ReadMail(msg *imap.Message) {
 	m, err := message.Read(r)
 	if message.IsUnknownCharset(err) {
 		// This error is not fatal
-		log.Println("Unknown encoding:", err)
+		out <- fmt.Sprintln("Unknown encoding:", err)
 	} else if err != nil {
 		log.Fatal(err)
 	}
 
 	dec := new(mime.WordDecoder)
 	header := m.Header
-	log.Println("Date:", header.Get("Date"))
-	log.Println("From:", header.Get("From"))
-	log.Println("To:", header.Get("To"))
+	out <- fmt.Sprintln("Date:", header.Get("Date"))
+	out <- fmt.Sprintln("From:", header.Get("From"))
+	out <- fmt.Sprintln("To:", header.Get("To"))
 	val, err := dec.DecodeHeader(header.Get("Subject"))
-	log.Println("Subject:", val, err)
-	// log.Println("Subject:", header.Get("Subject"))
+	out <- fmt.Sprintln("Subject:", val, err)
+	// out <- fmt.Sprintln("Subject:", header.Get("Subject"))
 
-	dfs(m)
+	dfs(m, out)
 }
 
 func (self *Email) Update(q chan Event) {
