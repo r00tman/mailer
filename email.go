@@ -8,6 +8,7 @@ import (
 	"mime"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -18,9 +19,12 @@ import (
 
 type Email struct {
 	c *client.Client
+	m sync.Mutex
 }
 
 func (self *Email) Connect() {
+	self.m.Lock()
+	defer self.m.Unlock()
 	c, err := client.DialTLS("imap.gmail.com:993", nil)
 	self.c = c
 	if err != nil {
@@ -33,6 +37,8 @@ func (self *Email) Connect() {
 }
 
 func (self *Email) Logout() {
+	self.m.Lock()
+	defer self.m.Unlock()
 	self.c.Logout()
 }
 
@@ -82,7 +88,9 @@ func dfs(m *message.Entity, out chan string) {
 	}
 }
 
-func (self *Email) ReadMail(msg *imap.Message, out chan string) {
+func (self *Email) ReadMail(msg imap.Message, out chan string) {
+	self.m.Lock()
+	defer self.m.Unlock()
 	c := self.c
 	_, err := c.Select("INBOX", false)
 	if err != nil {
@@ -132,6 +140,8 @@ func (self *Email) ReadMail(msg *imap.Message, out chan string) {
 }
 
 func (self *Email) Update(q chan Event) {
+	self.m.Lock()
+	defer self.m.Unlock()
 	c := self.c
 	mbox, err := c.Select("INBOX", false)
 	if err != nil {
@@ -155,7 +165,7 @@ func (self *Email) Update(q chan Event) {
 	}()
 
 	for msg := range messages {
-		q <- &NewMessageEvent{msg}
+		q <- NewMessageEvent{*msg}
 	}
 	// q <- &MEvent{"Done"}
 

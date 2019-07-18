@@ -36,7 +36,7 @@ func main() {
 	go func() {
 		for {
 			ev := s.PollEvent()
-			q <- &TermEvent{t: ev}
+			q <- TermEvent{t: ev}
 		}
 	}()
 
@@ -46,18 +46,18 @@ func main() {
 
 	viewer.backCallback = func() {
 		go func() {
-			q <- &ViewMailboxEvent{}
+			q <- ViewMailboxEvent{}
 		}()
 	}
 	list.forwardCallback = func() {
 		go func() {
-			q <- &ViewMessageEvent{(*imap.Message)(list.list[list.activeIdx].(*Message))}
+			q <- ViewMessageEvent{imap.Message(list.list[list.activeIdx].(Message))}
 		}()
 	}
 	for {
 		rev := <-q
 		switch rev := rev.(type) {
-		case *TermEvent:
+		case TermEvent:
 			switch ev := rev.t.(type) {
 			case *tcell.EventResize:
 				s.Sync()
@@ -82,16 +82,16 @@ func main() {
 					viewer.Update(s, ev)
 				}
 			}
-		case *NewMessageEvent:
-			list.list = append([]ListItem{(*Message)(rev.m)}, list.list...)
-		case *RefreshEvent:
-		case *ViewMessageEvent:
+		case NewMessageEvent:
+			list.list = append([]ListItem{Message(rev.m)}, list.list...)
+		case RefreshEvent:
+		case ViewMessageEvent:
 			isMailbox = false
 			viewer.list = []ListItem{}
 			viewer.activeIdx = 0
 			viewer.offset = 0
 			out := make(chan string, 0)
-			go func(msg *imap.Message) {
+			go func(msg imap.Message) {
 				c.ReadMail(msg, out)
 				close(out)
 			}(rev.m)
@@ -101,9 +101,9 @@ func main() {
 					l = append(l, (Line)(m))
 				}
 				viewer.list = l
-				q <- &RefreshEvent{}
+				q <- RefreshEvent{}
 			}()
-		case *ViewMailboxEvent:
+		case ViewMailboxEvent:
 			isMailbox = true
 		default:
 			return

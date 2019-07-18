@@ -37,7 +37,7 @@ func formatDate(date time.Time) string {
 	return date.Format(template)
 }
 
-func (msg *Message) drawMessage(s tcell.Screen, y int) {
+func (msg Message) drawMessage(s tcell.Screen, y int) {
 	w, _ := s.Size()
 
 	sender := msg.Envelope.Sender

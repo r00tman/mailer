@@ -13,7 +13,7 @@ type TermEvent struct {
 }
 
 type NewMessageEvent struct {
-	m *imap.Message
+	m imap.Message
 }
 
 type RefreshEvent struct {
@@ -23,5 +23,5 @@ type ViewMailboxEvent struct {
 }
 
 type ViewMessageEvent struct {
-	m *imap.Message
+	m imap.Message
 }
