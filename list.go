@@ -6,6 +6,11 @@ import (
 	"github.com/gdamore/tcell"
 )
 
+type ListItem interface {
+	drawMessage(s tcell.Screen, y int)
+	AsString() string
+}
+
 type List struct {
 	list      []ListItem
 	activeIdx int

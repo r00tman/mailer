@@ -8,10 +8,6 @@ import (
 	"github.com/gdamore/tcell"
 )
 
-type ListItem interface {
-	drawMessage(s tcell.Screen, y int)
-}
-
 type Message imap.Message
 
 func isUnseen(flags []string) bool {
@@ -35,6 +31,28 @@ func formatDate(date time.Time) string {
 		template = "Jan 02"
 	}
 	return date.Format(template)
+}
+
+func (msg Message) AsString() string {
+	sender := msg.Envelope.Sender
+	sender_str := sender[0].PersonalName
+	if len(sender_str) == 0 {
+		sender_str = sender[0].MailboxName + "@" + sender[0].HostName
+	}
+
+	is_unseen := isUnseen(msg.Flags)
+	unseen_str := " "
+	if is_unseen {
+		unseen_str = "*"
+	}
+
+	date_str := formatDate(msg.Envelope.Date)
+
+	str := unseen_str + " " + sender_str + " " +
+		msg.Envelope.Subject + " " + strings.Join(msg.Flags, " ") + " " +
+		date_str
+
+	return str
 }
 
 func (msg Message) drawMessage(s tcell.Screen, y int) {

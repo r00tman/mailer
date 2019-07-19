@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/gdamore/tcell"
 )
 
@@ -17,7 +19,7 @@ func (self *CmdPrompt) Draw(s tcell.Screen, active bool) {
 	}
 }
 
-func (self *CmdPrompt) Update(ev *tcell.EventKey) (bool, bool) {
+func (self *CmdPrompt) Update(ev *tcell.EventKey, q chan Event) (bool, bool) {
 	switch ev.Key() {
 	case tcell.KeyBackspace, tcell.KeyBackspace2:
 		if sz := len(self.str); sz > 0 {
@@ -29,6 +31,10 @@ func (self *CmdPrompt) Update(ev *tcell.EventKey) (bool, bool) {
 	case tcell.KeyEnter:
 		if self.str == ":q" {
 			return false, true
+		} else if strings.HasPrefix(self.str, "/") || strings.HasPrefix(self.str, "?") {
+			go func(f string, forward bool) {
+				q <- SetFilterEvent{f, forward}
+			}(self.str[1:], self.str[0] == '/')
 		}
 		self.str = ""
 		return false, false

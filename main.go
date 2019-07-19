@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strings"
 
 	"github.com/emersion/go-imap"
 	"github.com/gdamore/tcell"
@@ -54,6 +55,7 @@ func main() {
 			q <- ViewMessageEvent{imap.Message(list.list[list.activeIdx].(Message))}
 		}()
 	}
+	filter := ""
 	for {
 		rev := <-q
 		switch rev := rev.(type) {
@@ -63,15 +65,68 @@ func main() {
 				s.Sync()
 			case *tcell.EventKey:
 				if !isPromptActive {
-					if ev.Rune() == ':' {
+					switch ev.Rune() {
+					case ':', '/', '?':
+						prompt.str = ""
 						isPromptActive = true
-					}
-					if ev.Rune() == 'q' {
+					case 'q':
 						return
+					case 'N':
+						activeList := &viewer
+						if isMailbox {
+							activeList = &list
+						}
+						found := false
+						for i := activeList.activeIdx - 1; i >= 0; i-- {
+							if strings.Contains(activeList.list[i].AsString(), filter) {
+								activeList.activeIdx = i
+								found = true
+								break
+							}
+						}
+						if !found {
+							prompt.str = "Can't find '" + filter + "' starting from the end"
+							for i := len(activeList.list) - 1; i >= 0; i-- {
+								if strings.Contains(activeList.list[i].AsString(), filter) {
+									activeList.activeIdx = i
+									found = true
+									break
+								}
+							}
+						}
+						if !found {
+							prompt.str = "Can't find '" + filter + "'"
+						}
+					case 'n':
+						activeList := &viewer
+						if isMailbox {
+							activeList = &list
+						}
+						found := false
+						for i := activeList.activeIdx + 1; i < len(activeList.list); i++ {
+							if strings.Contains(activeList.list[i].AsString(), filter) {
+								activeList.activeIdx = i
+								found = true
+								break
+							}
+						}
+						if !found {
+							prompt.str = "Can't find '" + filter + "' starting from the beginning"
+							for i := 0; i < len(activeList.list); i++ {
+								if strings.Contains(activeList.list[i].AsString(), filter) {
+									activeList.activeIdx = i
+									found = true
+									break
+								}
+							}
+						}
+						if !found {
+							prompt.str = "Can't find '" + filter + "'"
+						}
 					}
 				}
 				if isPromptActive {
-					ipa, quit := prompt.Update(ev)
+					ipa, quit := prompt.Update(ev, q)
 					isPromptActive = ipa
 					if quit {
 						return
@@ -81,6 +136,33 @@ func main() {
 				} else {
 					viewer.Update(s, ev)
 				}
+			}
+		case SetFilterEvent:
+			filter = rev.f
+			activeList := &viewer
+			if isMailbox {
+				activeList = &list
+			}
+			found := false
+			if rev.forward {
+				for i := activeList.activeIdx; i < len(activeList.list); i++ {
+					if strings.Contains(activeList.list[i].AsString(), filter) {
+						activeList.activeIdx = i
+						found = true
+						break
+					}
+				}
+			} else {
+				for i := activeList.activeIdx; i >= 0; i-- {
+					if strings.Contains(activeList.list[i].AsString(), filter) {
+						activeList.activeIdx = i
+						found = true
+						break
+					}
+				}
+			}
+			if !found {
+				prompt.str = "Can't find '" + filter + "'"
 			}
 		case NewMessageEvent:
 			list.list = append([]ListItem{Message(rev.m)}, list.list...)

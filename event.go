@@ -16,6 +16,11 @@ type NewMessageEvent struct {
 	m imap.Message
 }
 
+type SetFilterEvent struct {
+	f       string
+	forward bool
+}
+
 type RefreshEvent struct {
 }
 
