@@ -68,8 +68,8 @@ func main() {
 				message = strings.ToLower(message)
 				if strings.Contains(message, f) {
 					activeList.ActiveIdx = i
+					activeList.InvalidateRange(s)
 					return true
-					break
 				}
 			}
 			return false

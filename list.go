@@ -40,6 +40,29 @@ func (self *List) Draw(s tcell.Screen, active bool) {
 	}
 }
 
+func (self *List) InvalidateRange(s tcell.Screen) {
+	_, h := s.Size()
+	if self.ActiveIdx >= len(self.List) {
+		self.ActiveIdx = len(self.List) - 1
+	}
+	if self.ActiveIdx < 0 {
+		self.ActiveIdx = 0
+	}
+
+	if self.ActiveIdx >= self.Offset+h-1 {
+		self.Offset = self.ActiveIdx + 2 - h
+	}
+	if self.Offset >= len(self.List) {
+		self.Offset = len(self.List) - 1
+	}
+	if self.ActiveIdx < self.Offset {
+		self.Offset = self.ActiveIdx
+	}
+	if self.Offset < 0 {
+		self.Offset = 0
+	}
+}
+
 func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
 	_, h := s.Size()
 	newChord := false
@@ -89,28 +112,24 @@ func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
 		self.ActiveIdx -= inc
 	case tcell.KeyDown:
 		self.ActiveIdx += inc
+	case tcell.KeyCtrlL:
+		if self.chord == "^" {
+			self.Offset = self.ActiveIdx + 1 - h/2
+			self.chord = "^^"
+			newChord = true
+		} else if self.chord == "^^" {
+			self.Offset = self.ActiveIdx - h + 1
+			self.chord = ""
+			newChord = false
+		} else {
+			self.Offset = self.ActiveIdx
+			self.chord = "^"
+			newChord = true
+		}
 	}
 	if !newChord {
 		self.chord = ""
 	}
 
-	if self.ActiveIdx >= len(self.List) {
-		self.ActiveIdx = len(self.List) - 1
-	}
-	if self.ActiveIdx < 0 {
-		self.ActiveIdx = 0
-	}
-
-	if self.ActiveIdx >= self.Offset+h-1 {
-		self.Offset = self.ActiveIdx + 2 - h
-	}
-	if self.Offset >= len(self.List) {
-		self.Offset = len(self.List) - 1
-	}
-	if self.ActiveIdx < self.Offset {
-		self.Offset = self.ActiveIdx
-	}
-	if self.Offset < 0 {
-		self.Offset = 0
-	}
+	self.InvalidateRange(s)
 }
