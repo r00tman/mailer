@@ -57,6 +57,25 @@ func main() {
 	}
 	filter := ""
 	for {
+		activeList := &viewer
+		if isMailbox {
+			activeList = &list
+		}
+		found := -1
+		tryFind := func(start int, inc func(int) int) int {
+			found := -1
+			for i := start; i < len(activeList.List) && i >= 0; i = inc(i) {
+				if strings.Contains(activeList.List[i].AsString(), filter) {
+					activeList.ActiveIdx = i
+					found = i
+					break
+				}
+			}
+			return found
+		}
+		inc := func(i int) int { return i + 1 }
+		dec := func(i int) int { return i - 1 }
+
 		rev := <-q
 		switch rev := rev.(type) {
 		case TermEvent:
@@ -72,56 +91,24 @@ func main() {
 					case 'q':
 						return
 					case 'N':
-						activeList := &viewer
-						if isMailbox {
-							activeList = &list
-						}
-						found := false
-						for i := activeList.ActiveIdx - 1; i >= 0; i-- {
-							if strings.Contains(activeList.List[i].AsString(), filter) {
-								activeList.ActiveIdx = i
-								found = true
-								break
-							}
-						}
-						if !found {
+						found := tryFind(dec(activeList.ActiveIdx), dec)
+
+						if found < 0 {
 							prompt.str = "Can't find '" + filter + "' starting from the end"
-							for i := len(activeList.List) - 1; i >= 0; i-- {
-								if strings.Contains(activeList.List[i].AsString(), filter) {
-									activeList.ActiveIdx = i
-									found = true
-									break
-								}
+							found = tryFind(len(activeList.List)-1, dec)
+							if found < 0 {
+								prompt.str = "Can't find '" + filter + "'"
 							}
-						}
-						if !found {
-							prompt.str = "Can't find '" + filter + "'"
 						}
 					case 'n':
-						activeList := &viewer
-						if isMailbox {
-							activeList = &list
-						}
-						found := false
-						for i := activeList.ActiveIdx + 1; i < len(activeList.List); i++ {
-							if strings.Contains(activeList.List[i].AsString(), filter) {
-								activeList.ActiveIdx = i
-								found = true
-								break
-							}
-						}
-						if !found {
+						found := tryFind(inc(activeList.ActiveIdx), inc)
+
+						if found < 0 {
 							prompt.str = "Can't find '" + filter + "' starting from the beginning"
-							for i := 0; i < len(activeList.List); i++ {
-								if strings.Contains(activeList.List[i].AsString(), filter) {
-									activeList.ActiveIdx = i
-									found = true
-									break
-								}
+							found = tryFind(0, inc)
+							if found < 0 {
+								prompt.str = "Can't find '" + filter + "'"
 							}
-						}
-						if !found {
-							prompt.str = "Can't find '" + filter + "'"
 						}
 					}
 				}
@@ -139,29 +126,13 @@ func main() {
 			}
 		case SetFilterEvent:
 			filter = rev.F
-			activeList := &viewer
-			if isMailbox {
-				activeList = &list
-			}
-			found := false
+
+			incFunc := dec
 			if rev.Forward {
-				for i := activeList.ActiveIdx; i < len(activeList.List); i++ {
-					if strings.Contains(activeList.List[i].AsString(), filter) {
-						activeList.ActiveIdx = i
-						found = true
-						break
-					}
-				}
-			} else {
-				for i := activeList.ActiveIdx; i >= 0; i-- {
-					if strings.Contains(activeList.List[i].AsString(), filter) {
-						activeList.ActiveIdx = i
-						found = true
-						break
-					}
-				}
+				incFunc = inc
 			}
-			if !found {
+			found = tryFind(activeList.ActiveIdx, incFunc)
+			if found < 0 {
 				prompt.str = "Can't find '" + filter + "'"
 			}
 		case NewMessageEvent:
