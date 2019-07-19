@@ -79,7 +79,7 @@ func dfs(m *message.Entity, out chan string) {
 		} else if t == "text/plain" {
 			newb, err := ioutil.ReadAll(m.Body)
 			if err == nil {
-				b = runewidth.Wrap(string(newb), 179)
+				b = runewidth.Wrap(string(newb), 85)
 			}
 		}
 		for _, x := range strings.Split(b, "\n") {
