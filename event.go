@@ -5,28 +5,19 @@ import (
 	"github.com/gdamore/tcell"
 )
 
-type Event interface {
-}
+type Event interface{}
 
-type TermEvent struct {
-	t tcell.Event
-}
+type TermEvent tcell.Event
 
-type NewMessageEvent struct {
-	m imap.Message
-}
+type NewMessageEvent imap.Message
 
 type SetFilterEvent struct {
-	f       string
-	forward bool
+	F       string
+	Forward bool
 }
 
-type RefreshEvent struct {
-}
+type RefreshEvent struct{}
 
-type ViewMailboxEvent struct {
-}
+type ViewMailboxEvent struct{}
 
-type ViewMessageEvent struct {
-	m imap.Message
-}
+type ViewMessageEvent imap.Message

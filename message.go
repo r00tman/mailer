@@ -55,7 +55,7 @@ func (msg Message) AsString() string {
 	return str
 }
 
-func (msg Message) drawMessage(s tcell.Screen, y int) {
+func (msg Message) DrawMessage(s tcell.Screen, y int) {
 	w, _ := s.Size()
 
 	sender := msg.Envelope.Sender
@@ -63,7 +63,7 @@ func (msg Message) drawMessage(s tcell.Screen, y int) {
 	if len(sender_str) == 0 {
 		sender_str = sender[0].MailboxName + "@" + sender[0].HostName
 	}
-	sender_str = truncateFillRight(sender_str, 20)
+	sender_str = TruncateFillRight(sender_str, 20)
 
 	is_unseen := isUnseen(msg.Flags)
 	unseen_str := " "
@@ -76,7 +76,7 @@ func (msg Message) drawMessage(s tcell.Screen, y int) {
 
 	date_str := " " + formatDate(msg.Envelope.Date)
 
-	str = truncateFillRight(str, w-len(date_str)) + date_str
+	str = TruncateFillRight(str, w-len(date_str)) + date_str
 
-	_ = emitStr(s, 0, y, tcell.StyleDefault.Bold(is_unseen), str)
+	_ = EmitStr(s, 0, y, tcell.StyleDefault.Bold(is_unseen), str)
 }

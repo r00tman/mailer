@@ -37,7 +37,7 @@ func main() {
 	go func() {
 		for {
 			ev := s.PollEvent()
-			q <- TermEvent{t: ev}
+			q <- TermEvent(ev)
 		}
 	}()
 
@@ -45,14 +45,14 @@ func main() {
 		c.Update(q)
 	}()
 
-	viewer.backCallback = func() {
+	viewer.BackCallback = func() {
 		go func() {
 			q <- ViewMailboxEvent{}
 		}()
 	}
-	list.forwardCallback = func() {
+	list.ForwardCallback = func() {
 		go func() {
-			q <- ViewMessageEvent{imap.Message(list.list[list.activeIdx].(Message))}
+			q <- ViewMessageEvent(imap.Message(list.List[list.ActiveIdx].(Message)))
 		}()
 	}
 	filter := ""
@@ -60,7 +60,7 @@ func main() {
 		rev := <-q
 		switch rev := rev.(type) {
 		case TermEvent:
-			switch ev := rev.t.(type) {
+			switch ev := rev.(type) {
 			case *tcell.EventResize:
 				s.Sync()
 			case *tcell.EventKey:
@@ -77,18 +77,18 @@ func main() {
 							activeList = &list
 						}
 						found := false
-						for i := activeList.activeIdx - 1; i >= 0; i-- {
-							if strings.Contains(activeList.list[i].AsString(), filter) {
-								activeList.activeIdx = i
+						for i := activeList.ActiveIdx - 1; i >= 0; i-- {
+							if strings.Contains(activeList.List[i].AsString(), filter) {
+								activeList.ActiveIdx = i
 								found = true
 								break
 							}
 						}
 						if !found {
 							prompt.str = "Can't find '" + filter + "' starting from the end"
-							for i := len(activeList.list) - 1; i >= 0; i-- {
-								if strings.Contains(activeList.list[i].AsString(), filter) {
-									activeList.activeIdx = i
+							for i := len(activeList.List) - 1; i >= 0; i-- {
+								if strings.Contains(activeList.List[i].AsString(), filter) {
+									activeList.ActiveIdx = i
 									found = true
 									break
 								}
@@ -103,18 +103,18 @@ func main() {
 							activeList = &list
 						}
 						found := false
-						for i := activeList.activeIdx + 1; i < len(activeList.list); i++ {
-							if strings.Contains(activeList.list[i].AsString(), filter) {
-								activeList.activeIdx = i
+						for i := activeList.ActiveIdx + 1; i < len(activeList.List); i++ {
+							if strings.Contains(activeList.List[i].AsString(), filter) {
+								activeList.ActiveIdx = i
 								found = true
 								break
 							}
 						}
 						if !found {
 							prompt.str = "Can't find '" + filter + "' starting from the beginning"
-							for i := 0; i < len(activeList.list); i++ {
-								if strings.Contains(activeList.list[i].AsString(), filter) {
-									activeList.activeIdx = i
+							for i := 0; i < len(activeList.List); i++ {
+								if strings.Contains(activeList.List[i].AsString(), filter) {
+									activeList.ActiveIdx = i
 									found = true
 									break
 								}
@@ -138,24 +138,24 @@ func main() {
 				}
 			}
 		case SetFilterEvent:
-			filter = rev.f
+			filter = rev.F
 			activeList := &viewer
 			if isMailbox {
 				activeList = &list
 			}
 			found := false
-			if rev.forward {
-				for i := activeList.activeIdx; i < len(activeList.list); i++ {
-					if strings.Contains(activeList.list[i].AsString(), filter) {
-						activeList.activeIdx = i
+			if rev.Forward {
+				for i := activeList.ActiveIdx; i < len(activeList.List); i++ {
+					if strings.Contains(activeList.List[i].AsString(), filter) {
+						activeList.ActiveIdx = i
 						found = true
 						break
 					}
 				}
 			} else {
-				for i := activeList.activeIdx; i >= 0; i-- {
-					if strings.Contains(activeList.list[i].AsString(), filter) {
-						activeList.activeIdx = i
+				for i := activeList.ActiveIdx; i >= 0; i-- {
+					if strings.Contains(activeList.List[i].AsString(), filter) {
+						activeList.ActiveIdx = i
 						found = true
 						break
 					}
@@ -165,24 +165,24 @@ func main() {
 				prompt.str = "Can't find '" + filter + "'"
 			}
 		case NewMessageEvent:
-			list.list = append([]ListItem{Message(rev.m)}, list.list...)
+			list.List = append([]ListItem{Message(rev)}, list.List...)
 		case RefreshEvent:
 		case ViewMessageEvent:
 			isMailbox = false
-			viewer.list = []ListItem{}
-			viewer.activeIdx = 0
-			viewer.offset = 0
+			viewer.List = []ListItem{}
+			viewer.ActiveIdx = 0
+			viewer.Offset = 0
 			out := make(chan string, 0)
 			go func(msg imap.Message) {
 				c.ReadMail(msg, out)
 				close(out)
-			}(rev.m)
+			}(imap.Message(rev))
 			go func() {
 				l := []ListItem{}
 				for m := range out {
 					l = append(l, (Line)(m))
 				}
-				viewer.list = l
+				viewer.List = l
 				q <- RefreshEvent{}
 			}()
 		case ViewMailboxEvent:

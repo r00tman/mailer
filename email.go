@@ -171,7 +171,7 @@ func (self *Email) Update(q chan Event) {
 	}()
 
 	for msg := range messages {
-		q <- NewMessageEvent{*msg}
+		q <- NewMessageEvent(*msg)
 	}
 	// q <- &MEvent{"Done"}
 

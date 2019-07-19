@@ -5,7 +5,7 @@ import (
 	"github.com/mattn/go-runewidth"
 )
 
-func emitStr(s tcell.Screen, x, y int, style tcell.Style, str string) int {
+func EmitStr(s tcell.Screen, x, y int, style tcell.Style, str string) int {
 	x_or := x
 	for _, c := range str {
 		var comb []rune
@@ -21,11 +21,11 @@ func emitStr(s tcell.Screen, x, y int, style tcell.Style, str string) int {
 	return x - x_or
 }
 
-func emitStrDef(s tcell.Screen, x, y int, str string) int {
-	return emitStr(s, x, y, tcell.StyleDefault, str)
+func EmitStrDef(s tcell.Screen, x, y int, str string) int {
+	return EmitStr(s, x, y, tcell.StyleDefault, str)
 }
 
-func truncateFillRight(x string, w int) string {
+func TruncateFillRight(x string, w int) string {
 	x = runewidth.Truncate(x, w, "\u2026")
 	x = runewidth.FillRight(x, w)
 	return x
