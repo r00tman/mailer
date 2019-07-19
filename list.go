@@ -67,10 +67,13 @@ func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
 	_, h := s.Size()
 	newChord := false
 	inc := 1
+	chordIsInt := true
 	if len(self.chord) > 0 {
 		ninc, err := strconv.Atoi(self.chord)
 		if err == nil {
 			inc = ninc
+		} else {
+			chordIsInt = false
 		}
 	}
 	switch ev.Rune() {
@@ -92,6 +95,9 @@ func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
 	case 'G':
 		self.ActiveIdx = len(self.List) - 1
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+		if !chordIsInt {
+			self.chord = ""
+		}
 		self.chord = self.chord + string(ev.Rune())
 		newChord = true
 	case '}', ' ':
