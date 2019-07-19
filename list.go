@@ -71,12 +71,16 @@ func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 		self.chord = self.chord + string(ev.Rune())
 		newChord = true
-	case '}':
+	case '}', ' ':
 		self.ActiveIdx += inc * h / 2
-	case '{':
+	case '{', 'b':
 		self.ActiveIdx -= inc * h / 2
 	}
 	switch ev.Key() {
+	case tcell.KeyLeft, tcell.KeyEsc:
+		self.BackCallback()
+	case tcell.KeyRight, tcell.KeyEnter:
+		self.ForwardCallback()
 	case tcell.KeyPgDn, tcell.KeyCtrlD:
 		self.ActiveIdx += inc * h / 2
 	case tcell.KeyPgUp, tcell.KeyCtrlU:
