@@ -13,7 +13,11 @@ import (
 func getConfigPath() (string, error) {
 	if cfg := os.Getenv("MAILER_CONFIG"); cfg != "" {
 		// config file is explicitly specified in env
-		return homedir.Expand(cfg)
+		path, err := homedir.Expand(cfg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return path, err
 	}
 
 	homedir, err := homedir.Dir()
@@ -24,9 +28,9 @@ func getConfigPath() (string, error) {
 	}
 
 	// look for ~/.mailerrc
-	homefile := path.Join(homedir, ".mailerrc")
+	path := path.Join(homedir, ".mailerrc")
 
-	return homefile, nil
+	return path, nil
 }
 
 func readAccount(f *os.File, verbose bool) (string, string, string) {
@@ -83,6 +87,14 @@ func getOrCreateAccount() (string, string, string) {
 		return readAccount(f, false)
 	} else {
 		// if config doesn't exist, read it from stdin
+		fmt.Print("Can't read config: ")
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			_, err = os.Stat(path)
+			fmt.Println(err)
+		}
+		fmt.Println("Creating a new one\u2026")
 		login, password, host := readAccount(os.Stdin, true)
 
 		// try to write config
