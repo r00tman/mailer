@@ -76,6 +76,21 @@ func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
 			chordIsInt = false
 		}
 	}
+	adjustView := func() {
+		if self.chord == "^" {
+			self.Offset = self.ActiveIdx + 1 - h/2
+			self.chord = "^^"
+			newChord = true
+		} else if self.chord == "^^" {
+			self.Offset = self.ActiveIdx - h + 1
+			self.chord = ""
+			newChord = false
+		} else {
+			self.Offset = self.ActiveIdx
+			self.chord = "^"
+			newChord = true
+		}
+	}
 	switch ev.Rune() {
 	case 'h':
 		self.BackCallback()
@@ -104,6 +119,8 @@ func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
 		self.ActiveIdx += inc * h / 2
 	case '{', 'b':
 		self.ActiveIdx -= inc * h / 2
+	case ';':
+		adjustView()
 	}
 	switch ev.Key() {
 	case tcell.KeyLeft, tcell.KeyEsc:
@@ -119,19 +136,7 @@ func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
 	case tcell.KeyDown:
 		self.ActiveIdx += inc
 	case tcell.KeyCtrlL:
-		if self.chord == "^" {
-			self.Offset = self.ActiveIdx + 1 - h/2
-			self.chord = "^^"
-			newChord = true
-		} else if self.chord == "^^" {
-			self.Offset = self.ActiveIdx - h + 1
-			self.chord = ""
-			newChord = false
-		} else {
-			self.Offset = self.ActiveIdx
-			self.chord = "^"
-			newChord = true
-		}
+		adjustView()
 	}
 	if !newChord {
 		self.chord = ""
