@@ -10,9 +10,14 @@ import (
 )
 
 func main() {
+	login, password, host := getOrCreateAccount()
 	c := Email{}
-	c.Connect()
-	defer c.Logout()
+	println("Connecting\u2026")
+	c.Connect(login, password, host)
+	defer func() {
+		println("Logging out\u2026")
+		c.Logout()
+	}()
 
 	encoding.Register()
 

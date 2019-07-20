@@ -22,16 +22,16 @@ type Email struct {
 	m sync.Mutex
 }
 
-func (self *Email) Connect() {
+func (self *Email) Connect(login, password, host string) {
 	self.m.Lock()
 	defer self.m.Unlock()
-	c, err := client.DialTLS("imap.gmail.com:993", nil)
+	c, err := client.DialTLS(host, nil)
 	self.c = c
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := c.Login(USER, PASSWD); err != nil {
+	if err := c.Login(login, password); err != nil {
 		log.Fatal(err)
 	}
 }
