@@ -30,7 +30,7 @@ func main() {
 		log.Fatal(e)
 	}
 	defer s.Fini()
-	s.EnableMouse()
+	// s.EnableMouse()
 
 	list := List{[]ListItem{}, 0, 0, "", func() {}, func() {}}
 	viewer := List{[]ListItem{}, 0, 0, "", func() {}, func() {}}
