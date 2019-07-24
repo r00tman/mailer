@@ -20,6 +20,7 @@ func isUnseen(flags []string) bool {
 }
 
 func formatDate(date time.Time) string {
+	date = date.Local()
 	now := time.Now().Truncate(time.Hour)
 	// Mimic GMail behavior
 	now = now.Add(time.Hour * (time.Duration)(now.Hour()/12*12-now.Hour()))
