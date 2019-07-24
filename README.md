@@ -32,7 +32,7 @@ This means that:
  - `hl`/`Esc Enter`/`Left Right` are for closing, opening emails,
  - `q`/`:q` are for quitting,
  - `PgUp PgDown`/`Ctr-U Ctr-D`/`{ }`/`b Space` are for page scrolling,
- - `gg G` are for getting to the start and to the end,
+ - `gg G`/`Home End` are for getting to the start and to the end,
  - `Ctrl-L`/`;` aligns view to the selection (cycles between modes when pressed repeatedly),
  - `/?` are for forward, backward search,
  - `nN` are for next, previous search match.

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"regexp"
 	"strconv"
 
 	"github.com/gdamore/tcell"
@@ -67,15 +68,22 @@ func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
 	_, h := s.Size()
 	newChord := false
 	inc := 1
-	chordIsInt := true
-	if len(self.chord) > 0 {
-		ninc, err := strconv.Atoi(self.chord)
+
+	chordHasInt := false
+	intChordRe := regexp.MustCompile("^[0-9]+")
+	intMatch, nonIntMatch := "", self.chord
+	if loc := intChordRe.FindStringIndex(self.chord); loc != nil {
+		intMatch = self.chord[loc[0]:loc[1]]
+		nonIntMatch = self.chord[loc[1]:]
+		ninc, err := strconv.Atoi(intMatch)
 		if err == nil {
 			inc = ninc
+			chordHasInt = true
 		} else {
-			chordIsInt = false
+			chordHasInt = false
 		}
 	}
+
 	adjustView := func() {
 		if self.chord == "^" {
 			self.Offset = self.ActiveIdx + 1 - h/2
@@ -101,16 +109,24 @@ func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
 	case 'k':
 		self.ActiveIdx -= inc
 	case 'g':
-		if self.chord == "g" {
-			self.ActiveIdx = 0
+		if nonIntMatch == "g" {
+			if chordHasInt {
+				self.ActiveIdx = inc
+			} else {
+				self.ActiveIdx = 0
+			}
 		} else {
-			self.chord = "g"
+			self.chord = intMatch + "g"
 			newChord = true
 		}
 	case 'G':
-		self.ActiveIdx = len(self.List) - 1
+		if chordHasInt {
+			self.ActiveIdx = inc
+		} else {
+			self.ActiveIdx = len(self.List) - 1
+		}
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-		if !chordIsInt {
+		if !chordHasInt {
 			self.chord = ""
 		}
 		self.chord = self.chord + string(ev.Rune())
@@ -135,6 +151,10 @@ func (self *List) Update(s tcell.Screen, ev *tcell.EventKey) {
 		self.ActiveIdx -= inc
 	case tcell.KeyDown:
 		self.ActiveIdx += inc
+	case tcell.KeyHome:
+		self.ActiveIdx = 0
+	case tcell.KeyEnd:
+		self.ActiveIdx = len(self.List) - 1
 	case tcell.KeyCtrlL:
 		adjustView()
 	}
