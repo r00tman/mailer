@@ -29,7 +29,7 @@ Most keybindings are vi/w3m style.
 
 This means that:
  - `jk`/`Down Up` are for down, up (numbers work too, i.e., `10j` scrolls 10 lines down),
- - `hl`/`Esc Enter`/`Left Right` are for closing, opening emails,
+ - `hl`/`Esc Enter`/`Left Right` are for closing, opening emails and mailboxes,
  - `q`/`:q` are for quitting,
  - `PgUp PgDown`/`Ctr-U Ctr-D`/`{ }`/`b Space` are for page scrolling,
  - `gg G`/`Home End` are for getting to the start and to the end,
