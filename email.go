@@ -88,11 +88,11 @@ func dfs(m *message.Entity, out chan string) {
 	}
 }
 
-func (self *Email) ReadMail(msg imap.Message, out chan string) {
+func (self *Email) ReadMail(msg imap.Message, mbox string, out chan string) {
 	self.m.Lock()
 	defer self.m.Unlock()
 	c := self.c
-	_, err := c.Select("INBOX", false)
+	_, err := c.Select(mbox, false)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -145,11 +145,30 @@ func (self *Email) ReadMail(msg imap.Message, out chan string) {
 	dfs(m, out)
 }
 
-func (self *Email) Update(q chan Event) {
+func (self *Email) Mailboxes(q chan Event) {
 	self.m.Lock()
 	defer self.m.Unlock()
 	c := self.c
-	mbox, err := c.Select("INBOX", false)
+	mailboxes := make(chan *imap.MailboxInfo, 10)
+	done := make(chan error, 1)
+	go func() {
+		done <- c.List("", "*", mailboxes)
+	}()
+
+	for m := range mailboxes {
+		q <- NewMailboxEvent(*m)
+	}
+
+	if err := <-done; err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (self *Email) Update(q chan Event, mboxName string) {
+	self.m.Lock()
+	defer self.m.Unlock()
+	c := self.c
+	mbox, err := c.Select(mboxName, false)
 	if err != nil {
 		log.Fatal(err)
 	}

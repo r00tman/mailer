@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/emersion/go-imap"
 	"github.com/gdamore/tcell"
 )
 
@@ -9,7 +8,9 @@ type Event interface{}
 
 type TermEvent tcell.Event
 
-type NewMessageEvent imap.Message
+type NewMessageEvent Message
+
+type NewMailboxEvent Mailbox
 
 type SetFilterEvent struct {
 	F       string
@@ -18,6 +19,8 @@ type SetFilterEvent struct {
 
 type RefreshEvent struct{}
 
-type ViewMailboxEvent struct{}
+type ViewAccountEvent struct{}
 
-type ViewMessageEvent imap.Message
+type ViewMailboxEvent Mailbox
+
+type ViewMessageEvent Message

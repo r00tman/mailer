@@ -22,6 +22,16 @@ type List struct {
 	ForwardCallback func()
 }
 
+func NewList() List {
+	return List{[]ListItem{}, 0, 0, "", func() {}, func() {}}
+}
+
+func (self *List) Clear() {
+	self.List = []ListItem{}
+	self.ActiveIdx = 0
+	self.Offset = 0
+}
+
 func (self *List) Draw(s tcell.Screen, active bool) {
 	_, h := s.Size()
 

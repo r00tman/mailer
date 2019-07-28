@@ -30,14 +30,15 @@ func main() {
 		log.Fatal(e)
 	}
 	defer s.Fini()
-	// s.EnableMouse()
 
-	list := List{[]ListItem{}, 0, 0, "", func() {}, func() {}}
-	viewer := List{[]ListItem{}, 0, 0, "", func() {}, func() {}}
+	mailboxes := NewList()
+	messages := NewList()
+	viewer := NewList()
 
 	prompt := CmdPrompt{}
 	isPromptActive := false
-	isMailbox := true
+	activeList := &messages
+	activeMbox := "INBOX"
 	q := make(chan Event, 0)
 	go func() {
 		for {
@@ -47,25 +48,43 @@ func main() {
 	}()
 
 	go func() {
-		c.Update(q)
+		c.Update(q, activeMbox)
 	}()
 
-	viewer.BackCallback = func() {
+	mailboxes.ForwardCallback = func() {
 		go func() {
-			q <- ViewMailboxEvent{}
+			mbox := Mailbox{Name: ""}
+			if len(mailboxes.List) > 0 {
+				mbox = mailboxes.List[mailboxes.ActiveIdx].(Mailbox)
+			}
+			q <- ViewMailboxEvent(mbox)
 		}()
 	}
-	list.ForwardCallback = func() {
+	messages.ForwardCallback = func() {
 		go func() {
-			q <- ViewMessageEvent(imap.Message(list.List[list.ActiveIdx].(Message)))
+			if len(messages.List) > 0 {
+				message := messages.List[messages.ActiveIdx].(Message)
+				q <- ViewMessageEvent(message)
+			}
+		}()
+	}
+	messages.BackCallback = func() {
+		if len(mailboxes.List) == 0 {
+			go func() {
+				c.Mailboxes(q)
+			}()
+		}
+		go func() {
+			q <- ViewAccountEvent{}
+		}()
+	}
+	viewer.BackCallback = func() {
+		go func() {
+			q <- ViewMailboxEvent(Mailbox{Name: ""})
 		}()
 	}
 	filter := ""
 	for {
-		activeList := &viewer
-		if isMailbox {
-			activeList = &list
-		}
 		tryFind := func(start int, inc func(int) int) bool {
 			f := strings.ToLower(filter)
 			for i := start; i < len(activeList.List) && i >= 0; i = inc(i) {
@@ -124,10 +143,8 @@ func main() {
 					if quit {
 						return
 					}
-				} else if isMailbox {
-					list.Update(s, ev)
 				} else {
-					viewer.Update(s, ev)
+					activeList.Update(s, ev)
 				}
 			}
 		case SetFilterEvent:
@@ -142,16 +159,16 @@ func main() {
 				prompt.str = "Can't find '" + filter + "'"
 			}
 		case NewMessageEvent:
-			list.List = append([]ListItem{Message(rev)}, list.List...)
+			messages.List = append([]ListItem{Message(rev)}, messages.List...)
+		case NewMailboxEvent:
+			mailboxes.List = append(mailboxes.List, Mailbox(rev))
 		case RefreshEvent:
 		case ViewMessageEvent:
-			isMailbox = false
-			viewer.List = []ListItem{}
-			viewer.ActiveIdx = 0
-			viewer.Offset = 0
+			activeList = &viewer
+			viewer.Clear()
 			out := make(chan string, 0)
 			go func(msg imap.Message) {
-				c.ReadMail(msg, out)
+				c.ReadMail(msg, activeMbox, out)
 				close(out)
 			}(imap.Message(rev))
 			go func() {
@@ -163,16 +180,21 @@ func main() {
 				q <- RefreshEvent{}
 			}()
 		case ViewMailboxEvent:
-			isMailbox = true
+			activeList = &messages
+			if rev.Name != "" {
+				activeMbox = rev.Name
+				messages.Clear()
+				go func() {
+					c.Update(q, activeMbox)
+				}()
+			}
+		case ViewAccountEvent:
+			activeList = &mailboxes
 		default:
 			return
 		}
 		s.Clear()
-		if isMailbox {
-			list.Draw(s, !isPromptActive)
-		} else {
-			viewer.Draw(s, !isPromptActive)
-		}
+		activeList.Draw(s, !isPromptActive)
 		prompt.Draw(s, isPromptActive)
 		s.Show()
 	}
