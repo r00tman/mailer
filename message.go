@@ -34,7 +34,7 @@ func formatDate(date time.Time) string {
 	return date.Format(template)
 }
 
-func (msg Message) AsString() string {
+func (msg Message) String() string {
 	sender := msg.Envelope.Sender
 	sender_str := sender[0].PersonalName
 	if len(sender_str) == 0 {

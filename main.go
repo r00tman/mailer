@@ -88,7 +88,7 @@ func main() {
 		tryFind := func(start int, inc func(int) int) bool {
 			f := strings.ToLower(filter)
 			for i := start; i < len(activeList.List) && i >= 0; i = inc(i) {
-				message := activeList.List[i].AsString()
+				message := activeList.List[i].String()
 				message = strings.ToLower(message)
 				if strings.Contains(message, f) {
 					activeList.ActiveIdx = i

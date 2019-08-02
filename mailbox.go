@@ -11,6 +11,6 @@ func (m Mailbox) DrawMessage(s tcell.Screen, y int) {
 	_ = EmitStrDef(s, 0, y, m.Name)
 }
 
-func (m Mailbox) AsString() string {
+func (m Mailbox) String() string {
 	return m.Name
 }

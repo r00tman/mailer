@@ -9,7 +9,7 @@ import (
 
 type ListItem interface {
 	DrawMessage(s tcell.Screen, y int)
-	AsString() string
+	String() string
 }
 
 type List struct {
