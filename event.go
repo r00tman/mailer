@@ -23,4 +23,6 @@ type ViewAccountEvent struct{}
 
 type ViewMailboxEvent Mailbox
 
+type ToggleReadEvent Message
+
 type ViewMessageEvent Message

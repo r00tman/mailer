@@ -83,6 +83,16 @@ func main() {
 			q <- ViewMailboxEvent(Mailbox{Name: ""})
 		}()
 	}
+	viewer.ToggleReadCallback = func() {
+		go func() {
+			q <- ToggleReadEvent(imap.Message(messages.List[messages.ActiveIdx].(Message)))
+		}()
+	}
+	messages.ToggleReadCallback = func() {
+		go func() {
+			q <- ToggleReadEvent(imap.Message(messages.List[messages.ActiveIdx].(Message)))
+		}()
+	}
 	filter := ""
 	for {
 		tryFind := func(start int, inc func(int) int) bool {
@@ -159,7 +169,11 @@ func main() {
 				prompt.str = "Can't find '" + filter + "'"
 			}
 		case NewMessageEvent:
-			messages.List = append([]ListItem{Message(rev)}, messages.List...)
+            if Message(rev).Envelope == nil {
+                messages.Updating = false
+            } else {
+                messages.List = append([]ListItem{Message(rev)}, messages.List...)
+            }
 		case NewMailboxEvent:
 			mailboxes.List = append(mailboxes.List, Mailbox(rev))
 		case RefreshEvent:
@@ -179,12 +193,38 @@ func main() {
 				viewer.List = l
 				q <- RefreshEvent{}
 			}()
+        case ToggleReadEvent:
+            out := make(chan *imap.Message, 1)
+            go func(msg imap.Message) {
+                c.SetReadFlag(msg, IsUnseen(msg.Flags), out)
+            }(imap.Message(rev))
+
+            go func() {
+                m := <-out;
+                if m == nil {
+                    log.Fatal("Received nil message")
+                }
+                found := false
+                for i := 0; i < len(messages.List); i += 1 {
+                    cmsg := messages.List[i].(Message)
+                    if m.Uid == cmsg.Uid {
+                        cmsg.Flags = m.Flags
+                        messages.List[i] = cmsg
+                        q <- RefreshEvent{}
+                        found = true
+                    }
+                }
+                if !found {
+                    log.Fatal("Message not found", m.Uid)
+                }
+            }()
 		case ViewMailboxEvent:
 			activeList = &messages
 			if rev.Name != "" {
 				activeMbox = rev.Name
 				messages.Clear()
 				go func() {
+                    messages.Updating = true
 					c.Update(q, activeMbox)
 				}()
 			}

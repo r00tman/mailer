@@ -145,6 +145,21 @@ func (self *Email) ReadMail(msg imap.Message, mbox string, out chan string) {
 	dfs(m, out)
 }
 
+func (self *Email) SetReadFlag(msg imap.Message, value bool, out chan *imap.Message) {
+    seq := new(imap.SeqSet)
+    seq.AddNum(msg.Uid)
+    var mode imap.StoreItem
+    if value {
+        mode = imap.AddFlags
+    } else {
+        mode = imap.RemoveFlags
+    }
+    err := self.c.UidStore(seq, mode, []interface{}{imap.SeenFlag}, out)
+    if err != nil {
+		log.Fatal(err)
+    }
+}
+
 func (self *Email) Mailboxes(q chan Event) {
 	self.m.Lock()
 	defer self.m.Unlock()
@@ -173,9 +188,13 @@ func (self *Email) Update(q chan Event, mboxName string) {
 		log.Fatal(err)
 	}
 	from := mbox.Messages - 100
-	if from < 0 {
+	if mbox.Messages < 100 {
 		from = 0
 	}
+    if mbox.Messages == 0 {
+        q <- NewMessageEvent(imap.Message {})
+        return
+    }
 	to := mbox.Messages
 	seqset := new(imap.SeqSet)
 	seqset.AddRange(from, to)
@@ -185,13 +204,14 @@ func (self *Email) Update(q chan Event, mboxName string) {
 	go func() {
 		done <- c.Fetch(
 			seqset,
-			[]imap.FetchItem{imap.FetchEnvelope, imap.FetchFlags},
+			[]imap.FetchItem{imap.FetchEnvelope, imap.FetchFlags, imap.FetchUid},
 			messages)
 	}()
 
 	for msg := range messages {
 		q <- NewMessageEvent(*msg)
 	}
+    q <- NewMessageEvent(imap.Message {})
 	// q <- &MEvent{"Done"}
 
 	if err := <-done; err != nil {

@@ -10,7 +10,7 @@ import (
 
 type Message imap.Message
 
-func isUnseen(flags []string) bool {
+func IsUnseen(flags []string) bool {
 	for _, x := range flags {
 		if x == imap.SeenFlag {
 			return false
@@ -41,7 +41,7 @@ func (msg Message) String() string {
 		sender_str = sender[0].MailboxName + "@" + sender[0].HostName
 	}
 
-	is_unseen := isUnseen(msg.Flags)
+	is_unseen := IsUnseen(msg.Flags)
 	unseen_str := " "
 	if is_unseen {
 		unseen_str = "*"
@@ -66,7 +66,7 @@ func (msg Message) DrawMessage(s tcell.Screen, y int) {
 	}
 	sender_str = TruncateFillRight(sender_str, 20)
 
-	is_unseen := isUnseen(msg.Flags)
+	is_unseen := IsUnseen(msg.Flags)
 	unseen_str := " "
 	if is_unseen {
 		unseen_str = "*"
