@@ -176,6 +176,9 @@ func main() {
             }
 		case NewMailboxEvent:
 			mailboxes.List = append(mailboxes.List, Mailbox(rev))
+            if rev.Name == activeMbox {
+                mailboxes.ActiveIdx = len(mailboxes.List)-1
+            }
 		case RefreshEvent:
 		case ViewMessageEvent:
 			activeList = &viewer
