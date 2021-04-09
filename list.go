@@ -41,7 +41,7 @@ func (self *List) Draw(s tcell.Screen, active bool) {
 		if self.Updating {
 			EmitStrDef(s, 0, 0, "Updating\u2026")
 		} else {
-			EmitStrDef(s, 0, 0, "Mailbox is empty")
+			EmitStrDef(s, 0, 0, "The list is empty")
 		}
 		s.ShowCursor(0, 0)
 	} else {

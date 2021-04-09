@@ -192,6 +192,7 @@ func main() {
 		case RefreshEvent:
 		case ViewMessageEvent:
 			activeList = &viewer
+			viewer.Updating = true
 			viewer.Clear()
 			out := make(chan string, 0)
 			go func(msg imap.Message) {
@@ -204,6 +205,7 @@ func main() {
 					l = append(l, (Line)(m))
 				}
 				viewer.List = l
+				viewer.Updating = false
 				q <- RefreshEvent{}
 			}()
 		case ToggleReadEvent:
