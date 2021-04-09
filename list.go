@@ -16,11 +16,11 @@ type List struct {
 	List      []ListItem
 	ActiveIdx int
 	Offset    int
-    Updating  bool
+	Updating  bool
 	chord     string
 
-	BackCallback    func()
-	ForwardCallback func()
+	BackCallback       func()
+	ForwardCallback    func()
 	ToggleReadCallback func()
 }
 
@@ -38,11 +38,11 @@ func (self *List) Draw(s tcell.Screen, active bool) {
 	_, h := s.Size()
 
 	if len(self.List) == 0 {
-        if self.Updating {
-            EmitStrDef(s, 0, 0, "Updating\u2026")
-        } else {
-            EmitStrDef(s, 0, 0, "Mailbox is empty")
-        }
+		if self.Updating {
+			EmitStrDef(s, 0, 0, "Updating\u2026")
+		} else {
+			EmitStrDef(s, 0, 0, "Mailbox is empty")
+		}
 		s.ShowCursor(0, 0)
 	} else {
 		for i, msg := range self.List[self.Offset:] {

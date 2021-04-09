@@ -124,9 +124,9 @@ func main() {
 						prompt.str = ""
 						isPromptActive = true
 					case 'q':
-                        go func() {
-                            q <- QuitEvent{}  // resubmit if client is locked
-                        }()
+						go func() {
+							q <- QuitEvent{} // resubmit if client is locked
+						}()
 					case 'N':
 						found := tryFind(dec(activeList.ActiveIdx), dec)
 
@@ -159,14 +159,14 @@ func main() {
 					activeList.Update(s, ev)
 				}
 			}
-        case QuitEvent:
-            if c.IsLocked() {
-                go func() {
-                    q <- QuitEvent{}  // resubmit if client is locked
-                }()
-            } else {
-                return
-            }
+		case QuitEvent:
+			if c.IsLocked() {
+				go func() {
+					q <- QuitEvent{} // resubmit if client is locked
+				}()
+			} else {
+				return
+			}
 		case SetFilterEvent:
 			filter = rev.F
 
@@ -179,16 +179,16 @@ func main() {
 				prompt.str = "Can't find '" + filter + "'"
 			}
 		case NewMessageEvent:
-            if Message(rev).Envelope == nil {
-                messages.Updating = false
-            } else {
-                messages.List = append([]ListItem{Message(rev)}, messages.List...)
-            }
+			if Message(rev).Envelope == nil {
+				messages.Updating = false
+			} else {
+				messages.List = append([]ListItem{Message(rev)}, messages.List...)
+			}
 		case NewMailboxEvent:
 			mailboxes.List = append(mailboxes.List, Mailbox(rev))
-            if rev.Name == activeMbox {
-                mailboxes.ActiveIdx = len(mailboxes.List)-1
-            }
+			if rev.Name == activeMbox {
+				mailboxes.ActiveIdx = len(mailboxes.List) - 1
+			}
 		case RefreshEvent:
 		case ViewMessageEvent:
 			activeList = &viewer
@@ -206,47 +206,47 @@ func main() {
 				viewer.List = l
 				q <- RefreshEvent{}
 			}()
-        case ToggleReadEvent:
-            out := make(chan *imap.Message, 1)
-            go func(msg imap.Message) {
-                c.SetReadFlag(msg, IsUnseen(msg.Flags), out)
-            }(imap.Message(rev))
+		case ToggleReadEvent:
+			out := make(chan *imap.Message, 1)
+			go func(msg imap.Message) {
+				c.SetReadFlag(msg, IsUnseen(msg.Flags), out)
+			}(imap.Message(rev))
 
-            go func() {
-                m := <-out;
-                if m == nil {
-                    log.Fatal("Received nil message")
-                }
-                found := false
-                for i := 0; i < len(messages.List); i += 1 {
-                    cmsg := messages.List[i].(Message)
-                    if m.Uid == cmsg.Uid {
-                        cmsg.Flags = m.Flags
-                        messages.List[i] = cmsg
-                        q <- RefreshEvent{}
-                        found = true
-                    }
-                }
-                if !found {
-                    log.Fatal("Message not found", m.Uid)
-                }
-            }()
+			go func() {
+				m := <-out
+				if m == nil {
+					log.Fatal("Received nil message")
+				}
+				found := false
+				for i := 0; i < len(messages.List); i += 1 {
+					cmsg := messages.List[i].(Message)
+					if m.Uid == cmsg.Uid {
+						cmsg.Flags = m.Flags
+						messages.List[i] = cmsg
+						q <- RefreshEvent{}
+						found = true
+					}
+				}
+				if !found {
+					log.Fatal("Message not found", m.Uid)
+				}
+			}()
 		case ViewMailboxEvent:
 			activeList = &messages
 			if rev.Name != "" {
 				activeMbox = rev.Name
 				messages.Clear()
 				go func() {
-                    messages.Updating = true
+					messages.Updating = true
 					c.Update(q, activeMbox)
 				}()
 			}
 		case ViewAccountEvent:
 			activeList = &mailboxes
 		default:
-            go func() {
-                q <- QuitEvent{}  // resubmit if client is locked
-            }()
+			go func() {
+				q <- QuitEvent{} // resubmit if client is locked
+			}()
 		}
 		s.Clear()
 		activeList.Draw(s, !isPromptActive)

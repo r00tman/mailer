@@ -10,7 +10,7 @@ import (
 	"os/exec"
 	"strings"
 
-    "golang.org/x/sync/semaphore"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -20,25 +20,25 @@ import (
 )
 
 type Email struct {
-    ctx context.Context
-	c *client.Client
-	m *semaphore.Weighted
+	ctx context.Context
+	c   *client.Client
+	m   *semaphore.Weighted
 }
 
 func NewEmail() Email {
-    return Email {
-        context.TODO(),
-        nil,
-        semaphore.NewWeighted(1),
-    }
+	return Email{
+		context.TODO(),
+		nil,
+		semaphore.NewWeighted(1),
+	}
 }
 
 func (self *Email) IsLocked() bool {
-    acquired := self.m.TryAcquire(1)
-    if acquired {
-        self.m.Release(1)
-    }
-    return !acquired
+	acquired := self.m.TryAcquire(1)
+	if acquired {
+		self.m.Release(1)
+	}
+	return !acquired
 }
 
 func (self *Email) Connect(login, password, host string) {
@@ -165,18 +165,18 @@ func (self *Email) ReadMail(msg imap.Message, mbox string, out chan string) {
 }
 
 func (self *Email) SetReadFlag(msg imap.Message, value bool, out chan *imap.Message) {
-    seq := new(imap.SeqSet)
-    seq.AddNum(msg.Uid)
-    var mode imap.StoreItem
-    if value {
-        mode = imap.AddFlags
-    } else {
-        mode = imap.RemoveFlags
-    }
-    err := self.c.UidStore(seq, mode, []interface{}{imap.SeenFlag}, out)
-    if err != nil {
+	seq := new(imap.SeqSet)
+	seq.AddNum(msg.Uid)
+	var mode imap.StoreItem
+	if value {
+		mode = imap.AddFlags
+	} else {
+		mode = imap.RemoveFlags
+	}
+	err := self.c.UidStore(seq, mode, []interface{}{imap.SeenFlag}, out)
+	if err != nil {
 		log.Fatal(err)
-    }
+	}
 }
 
 func (self *Email) Mailboxes(q chan Event) {
@@ -210,10 +210,10 @@ func (self *Email) Update(q chan Event, mboxName string) {
 	if mbox.Messages < 100 {
 		from = 0
 	}
-    if mbox.Messages == 0 {
-        q <- NewMessageEvent(imap.Message {})
-        return
-    }
+	if mbox.Messages == 0 {
+		q <- NewMessageEvent(imap.Message{})
+		return
+	}
 	to := mbox.Messages
 	seqset := new(imap.SeqSet)
 	seqset.AddRange(from, to)
@@ -236,5 +236,5 @@ func (self *Email) Update(q chan Event, mboxName string) {
 		log.Fatal(err)
 	}
 
-    q <- NewMessageEvent(imap.Message {})
+	q <- NewMessageEvent(imap.Message{})
 }

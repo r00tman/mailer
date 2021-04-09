@@ -8,7 +8,7 @@ type Event interface{}
 
 type TermEvent tcell.Event
 
-type QuitEvent struct {}
+type QuitEvent struct{}
 
 type NewMessageEvent Message
 
