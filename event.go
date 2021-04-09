@@ -8,6 +8,8 @@ type Event interface{}
 
 type TermEvent tcell.Event
 
+type QuitEvent struct {}
+
 type NewMessageEvent Message
 
 type NewMailboxEvent Mailbox

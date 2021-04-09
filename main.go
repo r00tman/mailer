@@ -11,7 +11,7 @@ import (
 
 func main() {
 	login, password, host := getOrCreateAccount()
-	c := Email{}
+	c := NewEmail()
 	println("Connecting\u2026")
 	c.Connect(login, password, host)
 	defer func() {
@@ -124,7 +124,9 @@ func main() {
 						prompt.str = ""
 						isPromptActive = true
 					case 'q':
-						return
+                        go func() {
+                            q <- QuitEvent{}  // resubmit if client is locked
+                        }()
 					case 'N':
 						found := tryFind(dec(activeList.ActiveIdx), dec)
 
@@ -151,12 +153,20 @@ func main() {
 					ipa, quit := prompt.Update(ev, q)
 					isPromptActive = ipa
 					if quit {
-						return
+						q <- QuitEvent{}
 					}
 				} else {
 					activeList.Update(s, ev)
 				}
 			}
+        case QuitEvent:
+            if c.IsLocked() {
+                go func() {
+                    q <- QuitEvent{}  // resubmit if client is locked
+                }()
+            } else {
+                return
+            }
 		case SetFilterEvent:
 			filter = rev.F
 
@@ -234,7 +244,9 @@ func main() {
 		case ViewAccountEvent:
 			activeList = &mailboxes
 		default:
-			return
+            go func() {
+                q <- QuitEvent{}  // resubmit if client is locked
+            }()
 		}
 		s.Clear()
 		activeList.Draw(s, !isPromptActive)

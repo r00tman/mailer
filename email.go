@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -8,7 +9,8 @@ import (
 	"mime"
 	"os/exec"
 	"strings"
-	"sync"
+
+    "golang.org/x/sync/semaphore"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -18,13 +20,30 @@ import (
 )
 
 type Email struct {
+    ctx context.Context
 	c *client.Client
-	m sync.Mutex
+	m *semaphore.Weighted
+}
+
+func NewEmail() Email {
+    return Email {
+        context.TODO(),
+        nil,
+        semaphore.NewWeighted(1),
+    }
+}
+
+func (self *Email) IsLocked() bool {
+    acquired := self.m.TryAcquire(1)
+    if acquired {
+        self.m.Release(1)
+    }
+    return !acquired
 }
 
 func (self *Email) Connect(login, password, host string) {
-	self.m.Lock()
-	defer self.m.Unlock()
+	self.m.Acquire(self.ctx, 1)
+	defer self.m.Release(1)
 	c, err := client.DialTLS(host, nil)
 	self.c = c
 	if err != nil {
@@ -37,8 +56,8 @@ func (self *Email) Connect(login, password, host string) {
 }
 
 func (self *Email) Logout() {
-	self.m.Lock()
-	defer self.m.Unlock()
+	self.m.Acquire(self.ctx, 1)
+	defer self.m.Release(1)
 	self.c.Logout()
 }
 
@@ -89,8 +108,8 @@ func dfs(m *message.Entity, out chan string) {
 }
 
 func (self *Email) ReadMail(msg imap.Message, mbox string, out chan string) {
-	self.m.Lock()
-	defer self.m.Unlock()
+	self.m.Acquire(self.ctx, 1)
+	defer self.m.Release(1)
 	c := self.c
 	_, err := c.Select(mbox, false)
 	if err != nil {
@@ -161,8 +180,8 @@ func (self *Email) SetReadFlag(msg imap.Message, value bool, out chan *imap.Mess
 }
 
 func (self *Email) Mailboxes(q chan Event) {
-	self.m.Lock()
-	defer self.m.Unlock()
+	self.m.Acquire(self.ctx, 1)
+	defer self.m.Release(1)
 	c := self.c
 	mailboxes := make(chan *imap.MailboxInfo, 10)
 	done := make(chan error, 1)
@@ -180,8 +199,8 @@ func (self *Email) Mailboxes(q chan Event) {
 }
 
 func (self *Email) Update(q chan Event, mboxName string) {
-	self.m.Lock()
-	defer self.m.Unlock()
+	self.m.Acquire(self.ctx, 1)
+	defer self.m.Release(1)
 	c := self.c
 	mbox, err := c.Select(mboxName, false)
 	if err != nil {
@@ -211,10 +230,11 @@ func (self *Email) Update(q chan Event, mboxName string) {
 	for msg := range messages {
 		q <- NewMessageEvent(*msg)
 	}
-    q <- NewMessageEvent(imap.Message {})
 	// q <- &MEvent{"Done"}
 
 	if err := <-done; err != nil {
 		log.Fatal(err)
 	}
+
+    q <- NewMessageEvent(imap.Message {})
 }
